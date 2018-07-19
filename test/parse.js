@@ -427,6 +427,67 @@ describe('parse', function () {
         });
     });
 
+    it('param with import', function () {
+        var res = doctrine.parse(
+            [
+                '/**',
+                ' * @param {import("path/to/module")} arg - The description.',
+                ' */'
+            ].join('\n'), { unwrap: true });
+        res.tags.should.have.length(1);
+        res.tags[0].should.have.property('title', 'param');
+        res.tags[0].should.have.property('name', 'arg');
+        res.tags[0].should.have.property('description', 'The description.');
+        res.tags[0].should.have.property('type');
+        res.tags[0].type.should.eql({
+            type: 'NameExpression',
+            name: 'import("path/to/module")'
+        });
+    });
+
+    it('param with import plus name', function () {
+        var res = doctrine.parse(
+            [
+                '/**',
+                ' * @param {import("path/to/module").SomeType} arg - The description.',
+                ' */'
+            ].join('\n'), { unwrap: true });
+        res.tags.should.have.length(1);
+        res.tags[0].should.have.property('title', 'param');
+        res.tags[0].should.have.property('name', 'arg');
+        res.tags[0].should.have.property('description', 'The description.');
+        res.tags[0].should.have.property('type');
+        res.tags[0].type.should.eql({
+            type: 'NameExpression',
+            name: 'import("path/to/module").SomeType'
+        });
+    });
+
+    it('param with bad import (missing closing paren)', function () {
+        var res = doctrine.parse(
+            [
+                '/**',
+                ' * @param {import("bad type} arg - The description.',
+                ' */'
+            ].join('\n'), { unwrap: true, recoverable: true });
+        res.tags.should.have.length(1);
+        res.tags[0].should.have.property('errors');
+        res.tags[0].errors.should.have.length(1);
+        res.tags[0].errors[0].should.equal('unexpected token');
+    });
+
+    it('param with bad import (misspelled import)', function () {
+        var res = doctrine.parse(
+            [
+                '/**',
+                ' * @param {impor("bad/spelling")} arg - The description.',
+                ' */'
+            ].join('\n'), { unwrap: true, recoverable: true });
+        res.tags.should.have.length(1);
+        res.tags[0].should.have.property('errors');
+        res.tags[0].errors.should.have.length(1);
+    });
+
     it('param with properties', function () {
         var res = doctrine.parse(
             [
